@@ -52,7 +52,7 @@ public class AGPushAnalytics {
     :param: userInfo contains the message id used to collect metrics.
     :param: completionHandler A block object to be executed when the send metrics operation finishes. Defaulted to no action.
     */
-    class public func sendMetricsWhenAppAwoken(applicationState: UIApplicationState, userInfo: [NSObject:AnyObject], completionHandler: ((error: NSError? ) -> Void) = {(error: NSError?) in }) {
+    class public func sendMetricsWhenAppAwoken(applicationState: UIApplicationState, userInfo: [NSObject:AnyObject], completionHandler: ((_: NSError? ) -> Void) = {(error: NSError?) in }) {
         if applicationState == .Inactive || applicationState == .Background  {
             //opened from a push notification when the app was on background
             if let messageId = userInfo["aerogear-push-id"] as? String {
@@ -61,7 +61,7 @@ public class AGPushAnalytics {
         }
     }
     
-    class private func sendMetrics(messageId: String, completionHandler: ((error: NSError? ) -> Void) = {(error: NSError?) in }) {
+    class private func sendMetrics(messageId: String, completionHandler: ((_: NSError? ) -> Void) = {(error: NSError?) in }) {
         let variantId = NSUserDefaults.standardUserDefaults().valueForKey("variantID") as? String
         let variantSecret = NSUserDefaults.standardUserDefaults().valueForKey("variantSecret") as? String
         let urlString = NSUserDefaults.standardUserDefaults().valueForKey("serverURL") as? String
@@ -70,7 +70,7 @@ public class AGPushAnalytics {
         if let variantId = variantId, let variantSecret = variantSecret, let urlString = urlString {
             let serverURL = NSURL(string: urlString)
             // set up our request
-            let request = NSMutableURLRequest(URL: serverURL!.URLByAppendingPathComponent("rest/registry/device/pushMessage/\(messageId)"))
+            let request = NSMutableURLRequest(URL: serverURL!.URLByAppendingPathComponent("rest/registry/device/pushMessage/\(messageId)")!)
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.HTTPMethod = "PUT"
             
@@ -85,7 +85,7 @@ public class AGPushAnalytics {
             
             let task = session.dataTaskWithRequest(request) {(data, response, error) in
                 if error != nil {
-                    completionHandler(error: error)
+                    completionHandler(error)
                     return
                 }
                 
@@ -94,7 +94,7 @@ public class AGPushAnalytics {
                 
                 // did we succeed?
                 if httpResp.statusCode == 200 {
-                    completionHandler(error: nil)
+                    completionHandler(nil)
                     
                 } else { // nope, client request error (e.g. 401 /* Unauthorized */)
                     let userInfo = [NSLocalizedDescriptionKey : NSHTTPURLResponse.localizedStringForStatusCode(httpResp.statusCode),
@@ -103,7 +103,7 @@ public class AGPushAnalytics {
                     
                     let error = NSError(domain:AGPushAnalyticsError.AGPushAnalyticsErrorDomain, code: NSURLErrorBadServerResponse, userInfo: userInfo)
                     
-                    completionHandler(error: error)
+                    completionHandler(error)
                 }
             }
             
@@ -111,7 +111,7 @@ public class AGPushAnalytics {
         } else {
             let userInfo = [NSLocalizedDescriptionKey : "Registration should be done prior to metrics collection"];
             let error = NSError(domain:AGPushAnalyticsError.AGPushAnalyticsErrorDomain, code: 0, userInfo: userInfo)
-            completionHandler(error: error)
+            completionHandler(error)
         }
     }
 }
